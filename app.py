@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import numpy_financial as npf
+# No importamos numpy_financial
 import plotly.express as px
 
 # --- Configuración de la Página ---
@@ -71,7 +71,7 @@ if simular_credito:
         '📈 Tasa de Interés Anual (%)',
         min_value=0.0,
         max_value=100.0,
-        value=25.0, # Un valor común para empezar
+        value=25.0, 
         step=0.5
     )
 
@@ -84,14 +84,21 @@ if ingreso_mensual > 0:
     total_gastos = gastos_fijos + gastos_variables
     flujo_libre = ingreso_mensual - total_gastos
 
-    if simular_credito and monto_prestamo > 0:
+    if simular_credito and monto_prestamo > 0 and plazo_meses > 0:
         if tasa_anual > 0:
-            # Usamos la función PMT de numpy_financial para calcular el pago mensual
-            tasa_mensual = tasa_anual / 100 / 12
-            pago_mensual_credito = -npf.pmt(tasa_mensual, plazo_meses, monto_prestamo)
+            # === INICIO DEL CAMBIO ===
+            # Reemplazamos npf.pmt() con la fórmula manual
+            tasa_mensual = (tasa_anual / 100) / 12
+            numerador = tasa_mensual * ((1 + tasa_mensual) ** plazo_meses)
+            denominador = ((1 + tasa_mensual) ** plazo_meses) - 1
+            if denominador > 0:
+                pago_mensual_credito = monto_prestamo * (numerador / denominador)
+            else: # Manejo de caso extremo
+                 pago_mensual_credito = monto_prestamo / plazo_meses
+            # === FIN DEL CAMBIO ===
         else:
-            # Crédito sin intereses
-            pago_mensual_credito = monto_prestamo / plazo_meses if plazo_meses > 0 else 0
+            # Caso de un crédito sin intereses
+            pago_mensual_credito = monto_prestamo / plazo_meses
     
     flujo_final = flujo_libre - pago_mensual_credito
 
@@ -121,7 +128,6 @@ if ingreso_mensual > 0:
         # --- Gráfica de Proyección ---
         st.subheader('Proyección de tu Dinero Durante el Plazo del Crédito')
         
-        # Crear un DataFrame para la gráfica
         meses = range(int(plazo_meses) + 1)
         saldo_acumulado = [flujo_final * mes for mes in meses]
         
@@ -130,7 +136,6 @@ if ingreso_mensual > 0:
             'Saldo Acumulado': saldo_acumulado
         })
 
-        # Generar la gráfica con Plotly
         fig = px.line(
             df_proyeccion, 
             x='Mes', 
@@ -140,10 +145,8 @@ if ingreso_mensual > 0:
             labels={'Saldo Acumulado': 'Saldo Acumulado (MXN)'}
         )
         
-        # Línea de referencia en cero
         fig.add_hline(y=0, line_dash="dash", line_color="red")
         
-        # Cambiar el color de la línea según el resultado
         line_color = "green" if flujo_final >= 0 else "red"
         fig.update_traces(line_color=line_color)
 
