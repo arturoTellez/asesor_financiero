@@ -17,7 +17,16 @@ if 'credit_calculated' not in st.session_state:
 
 # --- Título ---
 st.title('💡 Diagnóstico Financiero Personal')
+st.markdown("""
+Esta herramienta te guía en dos partes:
 
+**Paso 1: Conoce tu Salud Financiera Actual**
+- Descubre si tu estilo de vida actual es sostenible con tus ingresos y gastos.
+
+**Paso 2: Simula un Crédito**
+- Una vez que conozcas tu situación, podrás analizar si te conviene tomar un préstamo.
+""")
+st.markdown("---")
 # --- ====================================================================== ---
 # --- =============== ETAPA 1: SALUD FINANCIERA ACTUAL ===================== ---
 # --- ====================================================================== ---
