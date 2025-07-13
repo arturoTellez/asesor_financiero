@@ -17,12 +17,15 @@ if 'credit_calculated' not in st.session_state:
 
 # --- Título y Descripción ---
 st.title('💡 Diagnóstico Financiero 2-en-1')
-st.markdown("Ingresa tus datos en las siguientes columnas y presiona los botones para analizar tu situación.")
+st.markdown("Sigue los pasos para ingresar tus datos y presiona los botones para analizar tu situación.")
 
 # --- ====================================================================== ---
-# --- =============== SECCIÓN DE ENTRADA DE DATOS (3 COLUMNAS) ============= --- # <-- CAMBIO PRINCIPAL
+# --- =============== SECCIÓN DE ENTRADA DE DATOS (NUEVO ORDEN) ============ ---
 # --- ====================================================================== ---
-col1, col2, col3 = st.columns(3, gap="large")
+
+# --- ETAPA 1: INGRESOS Y GASTOS ---
+st.header("Paso 1: Tu Estilo de Vida Actual")
+col1, col2 = st.columns(2, gap="large")
 
 with col1:
     st.subheader("💰 Ingresos")
@@ -31,15 +34,20 @@ with col1:
 
 with col2:
     st.subheader("🏠 Gastos")
-    st.markdown("Suma de gastos **fijos** (renta, servicios) y **variables** (comida, transporte).")
+    st.markdown("Suma de gastos **fijos** y **variables**.")
     gastos_fijos = st.number_input('Gastos Fijos (MXN)', min_value=0.0, step=100.0)
     gastos_variables = st.number_input('Gastos Variables (MXN)', min_value=0.0, step=100.0)
 
-with col3:
-    st.subheader("💸 Crédito a Simular")
-    st.markdown("Ingresa los datos del préstamo que quieres solicitar.")
+# --- ETAPA 2: DATOS DEL CRÉDITO ---
+st.header("Paso 2: Simula un Crédito (Opcional)")
+st.markdown("Ingresa los datos del préstamo que quieres solicitar para analizar su viabilidad.")
+credit_cols = st.columns(3) # Columnas para los datos del crédito
+
+with credit_cols[0]:
     monto_prestamo = st.number_input('Monto del préstamo (MXN)', min_value=0.0, step=1000.0)
+with credit_cols[1]:
     plazo_meses = st.number_input('Plazo para pagar (meses)', min_value=1, step=1)
+with credit_cols[2]:
     tasa_anual = st.slider('Tasa de Interés Anual (%)', min_value=0.0, max_value=120.0, value=35.0, step=0.5)
 
 # --- ====================================================================== ---
