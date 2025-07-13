@@ -73,6 +73,10 @@ if st.session_state.lifestyle_calculated:
             pie_fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.3, textinfo='percent', marker_colors=['#FF6347', '#FFD700'])])
             pie_fig.update_layout(title_text='Distribución de Gastos', showlegend=True, margin=dict(t=40, b=0, l=0, r=0))
             st.plotly_chart(pie_fig, use_container_width=True)
+    
+    # --- TEXTO GUÍA AÑADIDO ---
+    st.info("Diagnóstico inicial completado. **Desplázate hacia abajo para simular un crédito si lo deseas.** 👇", icon="💡")
+
 
 # --- Muestra los campos de entrada del crédito si corresponde ---
 if st.session_state.show_credit_inputs:
@@ -125,10 +129,34 @@ if st.session_state.credit_calculated and 'flujo_libre' in locals():
         
         # (El resto del código para las proyecciones y explicaciones no necesita cambios)
         st.subheader("⚠️ Proyección de Deuda Realista")
-        # ... (código de proyección de deuda idéntico al anterior) ...
+        años_proj = [1, 2, 3, 5, 10, 20]
+        deuda_proyectada = []
+        deuda_actual = 0
+        deficit_estructural = abs(min(0, flujo_libre))
+        for mes_actual in range(1, max(años_proj) * 12 + 1):
+            if mes_actual <= plazo_meses:
+                deficit_a_sumar = deficit_total_mensual
+            else:
+                deficit_a_sumar = deficit_estructural
+            deuda_actual += deficit_a_sumar
+            deuda_actual *= (1 + tasa_mensual)
+            if mes_actual % 12 == 0:
+                año = mes_actual // 12
+                if año in años_proj:
+                    deuda_proyectada.append((f"{año} año(s)", f"${deuda_actual:,.2f}"))
+        df_proyeccion = pd.DataFrame(deuda_proyectada, columns=['Tiempo', 'Deuda Acumulada'])
+        st.table(df_proyeccion)
+        st.caption("Nota: No incluye cargos por falta de pago o penalizaciones.")
 
         st.subheader("Gráfica de Ganancias vs. Pérdidas")
-        # ... (código de gráfica idéntico al anterior) ...
+        meses_grafica = list(range(int(plazo_meses) + 1))
+        saldo_acumulado = [flujo_final_con_credito * mes for mes in meses_grafica]
+        fig = go.Figure()
+        fig.add_hline(y=0, line_dash="dash", line_color="gray")
+        fig.add_trace(go.Scatter(x=meses_grafica, y=[min(0, s) for s in saldo_acumulado], fill='tozeroy', mode='lines', line_color='rgba(255,0,0,0.7)', fillcolor='rgba(255,0,0,0.2)', name='Deuda'))
+        fig.add_trace(go.Scatter(x=meses_grafica, y=[max(0, s) for s in saldo_acumulado], fill='tozeroy', mode='lines', line_color='rgba(0,128,0,0.7)', fillcolor='rgba(0,128,0,0.2)', name='Ahorro'))
+        fig.update_layout(title_text='Evolución de tu Balance (Ahorro vs. Deuda)', xaxis_title='Mes', yaxis_title='Balance (MXN)')
+        st.plotly_chart(fig, use_container_width=True)
 
         with st.expander("El Factor Oculto: La Inflación"):
             st.markdown("La realidad es peor por la **inflación**. Cada año, tu dinero compra menos, tus gastos subirán y tu déficit real será mayor.")
