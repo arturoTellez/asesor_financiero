@@ -4,20 +4,21 @@ import plotly.graph_objects as go
 
 # --- Configuración de la Página ---
 st.set_page_config(
-    page_title="¿Te Conviene el Crédito?",
-    page_icon="⚖️",
+    page_title="Diagnóstico Financiero y de Crédito",
+    page_icon="💡",
     layout="wide"
 )
 
 # --- Título y Descripción ---
-st.title('⚖️ Analizador de Viabilidad de Créditos')
+st.title('💡 Diagnóstico Financiero 2-en-1')
 st.markdown("""
-¿Estás pensando en pedir un préstamo? Esta herramienta te ayuda a saber si realmente puedes pagarlo. 
-**Es simple:** ingresa tus finanzas y descubre si el crédito es una buena idea para ti o qué necesitas para que lo sea.
+Esta herramienta te ayuda en dos pasos:
+1.  **Diagnóstico de Estilo de Vida:** ¿Gastas más de lo que ganas actualmente?
+2.  **Análisis de Crédito:** ¿Puedes pagar el préstamo que quieres y cuáles son los riesgos reales?
 """)
 
 # --- Barra Lateral para Entradas del Usuario ---
-st.sidebar.header('Cuéntame de tus Finanzas')
+st.sidebar.header('Paso 1: Tus Finanzas')
 
 # --- INGRESOS ---
 with st.sidebar.expander("💰 Ingresos", expanded=True):
@@ -35,130 +36,130 @@ with st.sidebar.expander("🌮 Gastos Variables", expanded=True):
     gastos_variables = st.number_input('Estimado de gastos variables (MXN)', min_value=0.0, step=100.0, label_visibility="collapsed")
 
 # --- SIMULACIÓN DE CRÉDITO ---
-st.sidebar.markdown("---")
-with st.sidebar.expander("💸 Simulación de Crédito", expanded=True):
-    st.markdown("Ingresa los datos del préstamo que quieres solicitar.")
+st.sidebar.header("Paso 2: Simula un Crédito")
+with st.sidebar.expander("💸 Datos del Préstamo", expanded=True):
     monto_prestamo = st.number_input('Monto del préstamo (MXN)', min_value=0.0, step=1000.0)
     plazo_meses = st.number_input('Plazo para pagar (meses)', min_value=1, step=1)
     tasa_anual = st.slider('Tasa de Interés Anual (%)', min_value=0.0, max_value=120.0, value=35.0, step=0.5)
 
-# --- Panel Principal: Cálculos y Resultados ---
+# --- ====================================================================== ---
+# --- =================== PANEL PRINCIPAL DE ANÁLISIS ====================== ---
+# --- ====================================================================== ---
 st.markdown('---')
-st.header('Diagnóstico Financiero 🧐')
 
-if ingreso_mensual > 0 and monto_prestamo > 0:
+if ingreso_mensual <= 0:
+    st.info('Ingresa tus finanzas en la barra lateral para iniciar el diagnóstico.')
+else:
+    # --- ETAPA 1: DIAGNÓSTICO DE ESTILO DE VIDA ---
+    st.header("Diagnóstico 1: Tu Estilo de Vida Actual")
     total_gastos = gastos_fijos + gastos_variables
     flujo_libre = ingreso_mensual - total_gastos
-    pago_mensual_credito = 0.0
-    tasa_mensual = (tasa_anual / 100) / 12
 
-    if plazo_meses > 0:
-        if tasa_anual > 0:
-            numerador = tasa_mensual * ((1 + tasa_mensual) ** plazo_meses)
-            denominador = ((1 + tasa_mensual) ** plazo_meses) - 1
-            if denominador > 0:
-                pago_mensual_credito = monto_prestamo * (numerador / denominador)
-            else:
-                 pago_mensual_credito = monto_prestamo / plazo_meses
+    col1, col2 = st.columns([2, 1]) # Columnas para el texto y el gráfico
+
+    with col1:
+        if flujo_libre >= 0:
+            st.success(f"**¡Felicidades! Vives dentro de tus posibilidades.** ✅")
+            st.markdown(f"Actualmente, después de todos tus gastos, te sobran **${flujo_libre:,.2f}** cada mes. Tienes una base financiera saludable.")
         else:
-            pago_mensual_credito = monto_prestamo / plazo_meses
+            st.error(f"**¡Alerta! Estás gastando más de lo que ganas.** ❌")
+            st.markdown(f"Actualmente, tienes un déficit de **${abs(flujo_libre):,.2f}** cada mes. Esto significa que ya estás acumulando deudas o agotando tus ahorros. **Es crucial corregir esto antes de considerar un nuevo crédito.**")
+    
+    with col2:
+        if total_gastos > 0:
+            # Gráfico de pastel para breakdown de gastos
+            labels = ['Gastos Fijos', 'Gastos Variables']
+            values = [gastos_fijos, gastos_variables]
+            pie_fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.3, textinfo='percent+label', marker_colors=['#FF6347', '#FFD700'])])
+            pie_fig.update_layout(title_text='Distribución de tus Gastos', showlegend=False, margin=dict(t=40, b=0, l=0, r=0))
+            st.plotly_chart(pie_fig, use_container_width=True)
 
-    flujo_final = flujo_libre - pago_mensual_credito
+    # --- ETAPA 2: ANÁLISIS DE VIABILIDAD DEL CRÉDITO ---
+    if monto_prestamo > 0:
+        st.markdown("---")
+        st.header("Diagnóstico 2: Análisis de Viabilidad del Crédito")
 
-    st.subheader("Veredicto: ¿Te conviene tomar este crédito?")
+        pago_mensual_credito = 0.0
+        tasa_mensual = (tasa_anual / 100) / 12
 
-    # --- VEREDICTO POSITIVO ---
-    if flujo_final >= 0:
-        st.success(f"**¡Sí, es viable!** ✅")
-        st.markdown(f"""
-        Después de pagar la mensualidad de **${pago_mensual_credito:,.2f}**, aún **te quedarían ${flujo_final:,.2f} cada mes.** Tienes la capacidad financiera para asumir esta deuda. ¡Procede con responsabilidad!
-        """)
-        # Gráfica de proyección POSITIVA
-        st.markdown("Así se vería la acumulación de tu ahorro mes a mes durante el plazo del crédito:")
-        meses_grafica = range(int(plazo_meses) + 1)
-        saldo_acumulado_grafica = [flujo_final * mes for mes in meses_grafica]
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=list(meses_grafica), y=saldo_acumulado_grafica, fill='tozeroy', mode='lines', line_color='green', name='Ahorro'))
-        fig.add_hline(y=0, line_dash="dash", line_color="gray")
-        fig.update_layout(title='Evolución de tu Ahorro Acumulado', xaxis_title='Mes', yaxis_title='Balance (MXN)')
-        st.plotly_chart(fig, use_container_width=True)
+        if plazo_meses > 0:
+            if tasa_anual > 0:
+                numerador = tasa_mensual * ((1 + tasa_mensual) ** plazo_meses)
+                denominador = ((1 + tasa_mensual) ** plazo_meses) - 1
+                if denominador > 0: pago_mensual_credito = monto_prestamo * (numerador / denominador)
+                else: pago_mensual_credito = monto_prestamo / plazo_meses
+            else: pago_mensual_credito = monto_prestamo / plazo_meses
 
-    # --- VEREDICTO NEGATIVO ---
-    else:
-        deficit_mensual = abs(flujo_final)
-        st.error(f"**No, no es viable en este momento.** ❌")
-        st.markdown(f"""
-        Si tomas este crédito, **te faltarían ${deficit_mensual:,.2f} cada mes** para cubrir tus gastos. 
-        Esto te llevaría a una espiral de deuda creciente.
-        """)
+        flujo_final_con_credito = flujo_libre - pago_mensual_credito
 
-        st.warning(f"""
-        #### 💡 Recomendación Práctica:
-        Para poder pagar este crédito sin problemas, necesitarías **aumentar tu ingreso mensual neto en por lo menos ${deficit_mensual:,.2f}**.
-        """)
+        # Mensaje de advertencia si ya hay déficit
+        if flujo_libre < 0:
+            st.warning("**ADVERTENCIA IMPORTANTE:** Estás analizando un crédito cuando tu situación actual ya es de déficit. Añadir una nueva deuda es extremadamente riesgoso.")
 
-        st.subheader("⚠️ El Peligro Real de la Deuda: Proyección con Intereses")
-        st.markdown(f"Si tomaras el crédito, tu déficit mensual de **${deficit_mensual:,.2f}** generaría más intereses a una tasa del **{tasa_anual:.1f}% anual**. Así crecería tu deuda:")
+        st.metric('Pago Mensual del Crédito', f"${pago_mensual_credito:,.2f}")
 
-        años_proj = [1, 2, 3, 5, 10, 20]
-        deuda_proyectada = []
-        deuda_actual = 0
-        for año in range(1, max(años_proj) + 1):
-            for mes in range(12):
-                deuda_actual += deficit_mensual  # Sumas el déficit del mes
-                deuda_actual *= (1 + tasa_mensual) # Aplicas el interés a la deuda total
-            if año in años_proj:
-                deuda_proyectada.append((f"{año} año(s)", f"${deuda_actual:,.2f}"))
-
-        df_proyeccion = pd.DataFrame(deuda_proyectada, columns=['Tiempo', 'Deuda Acumulada (con interés)'])
-        st.table(df_proyeccion.style.set_properties(**{'text-align': 'left'}).set_table_styles([dict(selector='th', props=[('text-align', 'left')])]))
-        st.caption("Nota: Esta proyección no incluye cargos por falta de pago o penalizaciones, que harían la deuda aún mayor.")
-        
-        # Gráfica de proyección NEGATIVA
-        st.markdown("Así se vería tu balance hundiéndose mes a mes:")
-        meses_grafica = range(int(plazo_meses) + 1)
-        saldo_acumulado_grafica = [flujo_final * mes for mes in meses_grafica]
-
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=list(meses_grafica), y=saldo_acumulado_grafica, fill='tozeroy', mode='lines', line_color='red', name='Deuda'))
-        fig.add_hline(y=0, line_dash="dash", line_color="gray")
-        fig.update_layout(title='Evolución de tu Deuda Acumulada', xaxis_title='Mes', yaxis_title='Balance (MXN)')
-        st.plotly_chart(fig, use_container_width=True)
-
-        with st.expander("El Factor Oculto: La Inflación  महंगाई"):
-            st.markdown("""
-            La tabla anterior es alarmante, pero la realidad es peor por la **inflación**. Cada año, tu dinero compra menos. Esto significa que:
-            - Tus gastos fijos y variables (renta, comida, transporte) **subirán de precio**.
-            - Tu déficit mensual real será **mayor** al que calculamos.
-            - Necesitarías **ganar aún más** solo para mantener tu nivel de vida, y eso sin contar el pago de la deuda creciente.
+        # VEREDICTO FINAL DEL CRÉDITO
+        if flujo_final_con_credito >= 0:
+            st.success(f"**Veredicto del Crédito: VIABLE.** 👍")
+            st.markdown(f"Aún después de pagar la mensualidad, te quedarían **${flujo_final_con_credito:,.2f}**. Puedes asumir esta deuda.")
+        else:
+            deficit_total_mensual = abs(flujo_final_con_credito)
+            st.error(f"**Veredicto del Crédito: NO VIABLE.** 👎")
+            st.markdown(f"Si tomas este crédito, tu déficit mensual total sería de **${deficit_total_mensual:,.2f}**.")
             
-            En resumen, una deuda te empobrece activamente mientras el costo de vida aumenta.
-            """)
-
-        with st.expander("⚖️ Consecuencias Legales y Reales en México por No Pagar"):
-            st.markdown("""
-            Si dejas de pagar un crédito formal (banco, SOFOM, financiera), esto es lo que realmente sucede:
-
-            #### 1. Reporte a Buró de Crédito
-            Es la primera y más segura consecuencia. La institución te reportará con una mala calificación. Esto **destruye tu historial crediticio** por años, impidiéndote acceder a:
-            - Otros préstamos (personales, automotrices, hipotecarios).
-            - Tarjetas de crédito.
-            - En algunos casos, planes de telefonía celular o incluso la contratación en ciertos empleos.
+            st.info(f"Para poder pagar este crédito, necesitarías **aumentar tu ingreso mensual en ${deficit_total_mensual:,.2f}** o reducir tus gastos en la misma cantidad.")
             
-            #### 2. Cobranza Extrajudicial
-            El banco o un despacho de cobranza te contactará de forma insistente. Aunque existen reglas (REDECO de CONDUSEF), muchos despachos recurren al acoso telefónico a todas horas, e incluso contactan a tus referencias.
+            # --- SECCIÓN DE PROYECCIÓN DE DEUDA MEJORADA ---
+            st.subheader("⚠️ Proyección de Deuda Corregida (Más Realista)")
+            st.markdown("Así es como tu deuda crecería, considerando que después de que termina el plazo del crédito, tu déficit mensual cambia.")
 
-            #### 3. Juicio Mercantil y Embargo
-            Si la deuda es considerable, el acreedor puede iniciar un **juicio mercantil** para recuperar el dinero. Si el juez falla a su favor, puede ordenar un **embargo de bienes**.
-            - **¿Qué pueden embargar?** Bienes a tu nombre que no sean esenciales para vivir, como tu coche, televisor, computadoras, joyas, e incluso un porcentaje de tu sueldo (si excede el salario mínimo).
-            - **No es automático.** Requiere un proceso judicial y la orden de un juez. No pueden llegar a tu casa y llevarse tus cosas sin una orden.
+            años_proj = [1, 2, 3, 5, 10, 20]
+            deuda_proyectada = []
+            deuda_actual = 0
+            deficit_estructural = abs(min(0, flujo_libre)) # El déficit que tienes sin el crédito
 
-            #### 4. ¿Puedo ir a la cárcel por deudas?
-            **NO.** El **Artículo 17 de la Constitución Mexicana** prohíbe la prisión por deudas de carácter puramente civil, como un préstamo personal o una tarjeta de crédito. No dejes que los cobradores te intimiden con esa amenaza.
-            """)
-else:
-    st.info('Por favor, ingresa tu ingreso y los datos del préstamo para ver tu diagnóstico completo.')
+            for mes_actual in range(1, max(años_proj) * 12 + 1):
+                # Determinar el déficit a sumar este mes
+                if mes_actual <= plazo_meses:
+                    deficit_a_sumar = deficit_total_mensual
+                else:
+                    # Después del plazo del crédito, solo se suma el déficit estructural (si existe)
+                    deficit_a_sumar = deficit_estructural
+                
+                deuda_actual += deficit_a_sumar
+                deuda_actual *= (1 + tasa_mensual)
 
-st.markdown("---")
-st.write("Esta es una herramienta de simulación. Las condiciones reales de un crédito pueden variar. Úsala como una guía para tomar mejores decisiones financieras.")
+                if mes_actual % 12 == 0:
+                    año = mes_actual // 12
+                    if año in años_proj:
+                        deuda_proyectada.append((f"{año} año(s)", f"${deuda_actual:,.2f}"))
+
+            df_proyeccion = pd.DataFrame(deuda_proyectada, columns=['Tiempo', 'Deuda Acumulada (con interés)'])
+            st.table(df_proyeccion)
+            st.caption("Nota: Esta proyección es más precisa pero aún no incluye cargos por falta de pago o penalizaciones.")
+
+            # --- GRÁFICA MEJORADA ---
+            st.subheader("Gráfica de Ganancias vs. Pérdidas")
+            meses_grafica = list(range(int(plazo_meses) + 1))
+            saldo_acumulado = [flujo_final_con_credito * mes for mes in meses_grafica]
+            
+            fig = go.Figure()
+            fig.add_hline(y=0, line_dash="dash", line_color="gray")
+            fig.add_trace(go.Scatter(x=meses_grafica, y=[min(0, s) for s in saldo_acumulado], fill='tozeroy', mode='lines', line_color='rgba(255,0,0,0.7)', fillcolor='rgba(255,0,0,0.2)', name='Deuda'))
+            fig.add_trace(go.Scatter(x=meses_grafica, y=[max(0, s) for s in saldo_acumulado], fill='tozeroy', mode='lines', line_color='rgba(0,128,0,0.7)', fillcolor='rgba(0,128,0,0.2)', name='Ahorro'))
+
+            fig.update_layout(title_text='Evolución de tu Balance Acumulado (Ahorro vs. Deuda)', xaxis_title='Mes', yaxis_title='Balance (MXN)', showlegend=True)
+            st.plotly_chart(fig, use_container_width=True)
+
+            # --- EXPANSORES DE CONSECUENCIAS ---
+            with st.expander("El Factor Oculto: La Inflación"):
+                st.markdown("La tabla es alarmante, pero la realidad es peor por la **inflación**. Cada año, tu dinero compra menos, lo que significa que tus gastos subirán y tu déficit real será mayor.")
+            
+            with st.expander("⚖️ Consecuencias Legales y Reales en México por No Pagar"):
+                st.markdown("""
+                Si dejas de pagar un crédito formal, las consecuencias son serias:
+                - **Buró de Crédito:** Tu historial crediticio se destruye por años.
+                - **Cobranza Extrajudicial:** Acoso telefónico de despachos de cobranza.
+                - **Juicio Mercantil y Embargo:** Un juez puede ordenar el embargo de bienes (coche, casa, un porcentaje de tu sueldo) para pagar la deuda.
+                - **¿Cárcel? NO.** El Artículo 17 de la Constitución prohíbe la prisión por deudas de carácter civil. No dejes que te intimiden con esa amenaza.
+                """)
