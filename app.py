@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 
 # --- Configuración de la Página ---
 st.set_page_config(
-    page_title="Diagnóstico Financiero y de Crédito",
+    page_title="Diagnóstico Financiero y de Crédito ",
     page_icon="💡",
     layout="wide"
 )
