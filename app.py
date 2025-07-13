@@ -11,16 +11,33 @@ st.set_page_config(
 
 # --- INICIALIZACIÓN DEL ESTADO DE SESIÓN ---
 if 'show_credit_inputs' not in st.session_state:
-    st.session_state.show_credit_inputs = False # Controla si se muestran los campos del crédito
+    st.session_state.show_credit_inputs = False
 if 'lifestyle_calculated' not in st.session_state:
-    st.session_state.lifestyle_calculated = False # Controla si se muestra el diagnóstico 1
+    st.session_state.lifestyle_calculated = False
 if 'credit_calculated' not in st.session_state:
-    st.session_state.credit_calculated = False # Controla si se muestra el diagnóstico 2
-
+    st.session_state.credit_calculated = False
 
 # --- Título y Descripción ---
 st.title('💡 Diagnóstico Financiero Guiado')
-st.markdown("Sigue los pasos para analizar tu situación financiera de forma clara y ordenada.")
+
+# --- INSTRUCTIVO AÑADIDO ---
+with st.container(border=True):
+    st.markdown("""
+    #### ¿Cómo usar esta herramienta?
+    
+    **Paso 1: Ingresa tu Realidad Financiera** 💰
+    - En la primera sección, introduce tu **ingreso mensual neto** y la suma de tus **gastos**.
+    
+    **Paso 2: Obtén tu Diagnóstico Inicial** 📉
+    - Presiona el botón "**Calcular Flujo Mensual y Continuar**". La aplicación te mostrará si te sobra o te falta dinero cada mes.
+    
+    **Paso 3: Simula el Crédito** 💸
+    - Después del primer diagnóstico, **desplázate hacia abajo**. Aparecerá una nueva sección para que ingreses los datos del crédito que consideras.
+    
+    **Paso 4: Recibe el Veredicto Final** ✅
+    - Una vez llenados los datos, presiona "**Analizar Viabilidad del Crédito**" para obtener el veredicto final y las proyecciones de riesgo.
+    """)
+
 st.markdown("---")
 
 # --- ====================================================================== ---
@@ -45,7 +62,7 @@ if ingreso_mensual > 0:
     if st.button('Calcular Flujo Mensual y Continuar', use_container_width=True):
         st.session_state.lifestyle_calculated = True
         st.session_state.show_credit_inputs = True
-        st.session_state.credit_calculated = False # Resetea el análisis de crédito
+        st.session_state.credit_calculated = False
 
 # --- ====================================================================== ---
 # --- =================== ANÁLISIS Y ENTRADAS ETAPA 2 ====================== ---
@@ -74,9 +91,7 @@ if st.session_state.lifestyle_calculated:
             pie_fig.update_layout(title_text='Distribución de Gastos', showlegend=True, margin=dict(t=40, b=0, l=0, r=0))
             st.plotly_chart(pie_fig, use_container_width=True)
     
-    # --- TEXTO GUÍA AÑADIDO ---
     st.info("Diagnóstico inicial completado. **Desplázate hacia abajo para simular un crédito si lo deseas.** 👇", icon="💡")
-
 
 # --- Muestra los campos de entrada del crédito si corresponde ---
 if st.session_state.show_credit_inputs:
@@ -127,7 +142,6 @@ if st.session_state.credit_calculated and 'flujo_libre' in locals():
         st.markdown(f"Si tomas este crédito, tu déficit mensual total sería de **${deficit_total_mensual:,.2f}**.")
         st.info(f"Para poder pagar este crédito, necesitarías **aumentar tu ingreso en ${deficit_total_mensual:,.2f}** o reducir tus gastos.")
         
-        # (El resto del código para las proyecciones y explicaciones no necesita cambios)
         st.subheader("⚠️ Proyección de Deuda Realista")
         años_proj = [1, 2, 3, 5, 10, 20]
         deuda_proyectada = []
