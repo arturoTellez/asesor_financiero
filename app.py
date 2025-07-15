@@ -37,7 +37,7 @@ with st.container(border=True):
     col1, col2 = st.columns(2, gap="large")
 
     with col1:
-        st.subheader("💰 ¿Cuánto ganas?")
+        st.subheader("💰 ¿Cuál es tu ingreso?")
         st.markdown("Tu sueldo mensual (libre de impuestos).")
         ingreso_mensual = st.number_input('Ingreso Mensual Neto (MXN)', min_value=0.0, step=500.0, label_visibility="collapsed")
 
